@@ -65,6 +65,6 @@ export class LineNotify {
   }
 }
 
-let notify = new LineNotify();
-notify.token = "ssodjXHcAg03lmxIAR0fLEFSbTnatr1y9Rtv18Y2SYv";
-notify.send({ message: "wtf" });
+//let notify = new LineNotify();
+//notify.token = "ssodjXHcAg03lmxIAR0fLEFSbTnatr1y9Rtv18Y2SYv";
+//notify.send({ message: "wtf" });
