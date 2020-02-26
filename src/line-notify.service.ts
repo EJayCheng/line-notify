@@ -1,24 +1,24 @@
-import { Injectable, Inject } from "@nestjs/common";
-import { LineNotifyMessage, LineNotify } from "./line-notify";
+import { Inject, Injectable } from "@nestjs/common";
+import { LineNotify, LineNotifyMessage } from "./line-notify";
 
 export const LINE_NOTIFY_TOKEN = "LINE_NOTIFY_TOKEN";
 
 @Injectable()
 export class LineNotifyService {
-  public notify = new LineNotify();
+  public lineNotify = new LineNotify();
 
   public constructor(
     @Inject(LINE_NOTIFY_TOKEN)
-    public token: string
+    public token: string[] = []
   ) {
-    this.notify.token = token;
+    this.lineNotify.tokens = token;
   }
 
-  public setToken(token: string) {
-    this.notify.token = token;
+  public setToken(tokens: string[] = []) {
+    this.lineNotify.tokens = tokens;
   }
 
   public async send(data: LineNotifyMessage): Promise<boolean> {
-    return this.notify.send(data);
+    return this.lineNotify.send(data);
   }
 }

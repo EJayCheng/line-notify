@@ -1,3 +1,4 @@
+import { map } from "bluebird";
 import { post } from "request-promise";
 
 export interface LineNotifyMessage {
@@ -33,7 +34,10 @@ export interface LineNotifyMessage {
 const NOTIFY_URL = "https://notify-api.line.me/api/notify";
 
 export class LineNotify {
-  public constructor(public token?: string) {}
+  public constructor(public tokens: string[] = []) {
+    if (typeof tokens === "string") this.tokens = [tokens];
+  }
+
   private overflowText(
     text: string,
     max: number = 1000,
@@ -46,17 +50,36 @@ export class LineNotify {
       return text.slice(0, max - suffix.length) + suffix;
     }
   }
+
   public async send(formData: LineNotifyMessage): Promise<boolean> {
+    if (!(this.tokens instanceof Array)) return false;
     if (!formData) return false;
     if (!formData.message || typeof formData.message !== "string") return false;
     formData.message = this.overflowText(formData.message);
+    return map(
+      this.tokens,
+      token => {
+        if (typeof token !== "string") return;
+        return this.notify(token.trim(), formData);
+      },
+      { concurrency: 10 }
+    )
+      .then(res => true)
+      .catch(err => false);
+  }
+
+  private async notify(
+    bearer: string,
+    formData: LineNotifyMessage
+  ): Promise<boolean> {
+    if (!bearer) return false;
     return post(NOTIFY_URL, {
       resolveWithFullResponse: true,
       headers: {
         "Content-Type": "	application/x-www-form-urlencoded"
       },
       auth: {
-        bearer: this.token
+        bearer
       },
       formData
     })
@@ -64,7 +87,3 @@ export class LineNotify {
       .catch(err => false);
   }
 }
-
-//let notify = new LineNotify();
-//notify.token = "ssodjXHcAg03lmxIAR0fLEFSbTnatr1y9Rtv18Y2SYv";
-//notify.send({ message: "wtf" });
