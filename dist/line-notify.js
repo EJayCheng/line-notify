@@ -35,11 +35,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var bluebird_1 = require("bluebird");
 var request_promise_1 = require("request-promise");
 var NOTIFY_URL = "https://notify-api.line.me/api/notify";
 var LineNotify = /** @class */ (function () {
-    function LineNotify(token) {
-        this.token = token;
+    function LineNotify(tokens) {
+        if (tokens === void 0) { tokens = []; }
+        this.tokens = tokens;
+        if (typeof tokens === "string")
+            this.tokens = [tokens];
     }
     LineNotify.prototype.overflowText = function (text, max, suffix) {
         if (max === void 0) { max = 1000; }
@@ -55,19 +59,37 @@ var LineNotify = /** @class */ (function () {
     };
     LineNotify.prototype.send = function (formData) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             return __generator(this, function (_a) {
+                if (!(this.tokens instanceof Array))
+                    return [2 /*return*/, false];
                 if (!formData)
                     return [2 /*return*/, false];
                 if (!formData.message || typeof formData.message !== "string")
                     return [2 /*return*/, false];
                 formData.message = this.overflowText(formData.message);
+                return [2 /*return*/, bluebird_1.map(this.tokens, function (token) {
+                        if (typeof token !== "string")
+                            return;
+                        return _this.notify(token.trim(), formData);
+                    }, { concurrency: 10 })
+                        .then(function (res) { return true; })
+                        .catch(function (err) { return false; })];
+            });
+        });
+    };
+    LineNotify.prototype.notify = function (bearer, formData) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                if (!bearer)
+                    return [2 /*return*/, false];
                 return [2 /*return*/, request_promise_1.post(NOTIFY_URL, {
                         resolveWithFullResponse: true,
                         headers: {
                             "Content-Type": "	application/x-www-form-urlencoded"
                         },
                         auth: {
-                            bearer: this.token
+                            bearer: bearer
                         },
                         formData: formData
                     })
@@ -79,6 +101,3 @@ var LineNotify = /** @class */ (function () {
     return LineNotify;
 }());
 exports.LineNotify = LineNotify;
-//let notify = new LineNotify();
-//notify.token = "ssodjXHcAg03lmxIAR0fLEFSbTnatr1y9Rtv18Y2SYv";
-//notify.send({ message: "wtf" });

@@ -28,8 +28,9 @@ export interface LineNotifyMessage {
     notificationDisabled?: boolean;
 }
 export declare class LineNotify {
-    token?: string | undefined;
-    constructor(token?: string | undefined);
+    tokens: string[];
+    constructor(tokens?: string[]);
     private overflowText;
     send(formData: LineNotifyMessage): Promise<boolean>;
+    private notify;
 }

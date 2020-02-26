@@ -49,17 +49,19 @@ var line_notify_1 = require("./line-notify");
 exports.LINE_NOTIFY_TOKEN = "LINE_NOTIFY_TOKEN";
 var LineNotifyService = /** @class */ (function () {
     function LineNotifyService(token) {
+        if (token === void 0) { token = []; }
         this.token = token;
-        this.notify = new line_notify_1.LineNotify();
-        this.notify.token = token;
+        this.lineNotify = new line_notify_1.LineNotify();
+        this.lineNotify.tokens = token;
     }
-    LineNotifyService.prototype.setToken = function (token) {
-        this.notify.token = token;
+    LineNotifyService.prototype.setToken = function (tokens) {
+        if (tokens === void 0) { tokens = []; }
+        this.lineNotify.tokens = tokens;
     };
     LineNotifyService.prototype.send = function (data) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, this.notify.send(data)];
+                return [2 /*return*/, this.lineNotify.send(data)];
             });
         });
     };
