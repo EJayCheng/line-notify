@@ -58,7 +58,7 @@ export class LineNotify {
     formData.message = this.overflowText(formData.message);
     return map(
       this.tokens,
-      token => {
+      async token => {
         if (typeof token !== "string") return;
         return this.notify(token.trim(), formData);
       },

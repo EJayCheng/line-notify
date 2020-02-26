@@ -68,11 +68,13 @@ var LineNotify = /** @class */ (function () {
                 if (!formData.message || typeof formData.message !== "string")
                     return [2 /*return*/, false];
                 formData.message = this.overflowText(formData.message);
-                return [2 /*return*/, bluebird_1.map(this.tokens, function (token) {
-                        if (typeof token !== "string")
-                            return;
-                        return _this.notify(token.trim(), formData);
-                    }, { concurrency: 10 })
+                return [2 /*return*/, bluebird_1.map(this.tokens, function (token) { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            if (typeof token !== "string")
+                                return [2 /*return*/];
+                            return [2 /*return*/, this.notify(token.trim(), formData)];
+                        });
+                    }); }, { concurrency: 10 })
                         .then(function (res) { return true; })
                         .catch(function (err) { return false; })];
             });
