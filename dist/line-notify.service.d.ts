@@ -1,9 +1,9 @@
-import { LineNotify, LineNotifyMessage } from "./line-notify";
+import { LineNotifyMessage } from "./line-notify.dto";
 export declare const LINE_NOTIFY_TOKEN = "LINE_NOTIFY_TOKEN";
 export declare class LineNotifyService {
-    token: string[];
-    lineNotify: LineNotify;
-    constructor(token?: string[]);
-    setToken(tokens?: string[]): void;
-    send(data: LineNotifyMessage): Promise<boolean>;
+    private lineNotify;
+    constructor(token?: string | string[]);
+    registerToken(tokens?: string | string[]): void;
+    unregisterToken(tokens?: string | string[]): void;
+    send(data: string | LineNotifyMessage): Promise<boolean>;
 }

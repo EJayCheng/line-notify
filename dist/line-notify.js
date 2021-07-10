@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -35,19 +36,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.LineNotify = void 0;
 var bluebird_1 = require("bluebird");
 var request_promise_1 = require("request-promise");
 var NOTIFY_URL = "https://notify-api.line.me/api/notify";
+var STATUS_URL = "https://notify-api.line.me/api/status";
 var LineNotify = /** @class */ (function () {
     function LineNotify(tokens) {
         if (tokens === void 0) { tokens = []; }
-        this.tokens = tokens;
-        if (typeof tokens === "string")
-            this.tokens = [tokens];
+        this.tokenSet = new Set();
+        this.registerToken(tokens);
     }
     LineNotify.prototype.overflowText = function (text, max, suffix) {
         if (max === void 0) { max = 1000; }
-        if (suffix === void 0) { suffix = "..."; }
+        if (suffix === void 0) { suffix = "……"; }
         if (text.length <= max)
             return text;
         if (max <= suffix.length) {
@@ -57,22 +59,54 @@ var LineNotify = /** @class */ (function () {
             return text.slice(0, max - suffix.length) + suffix;
         }
     };
+    LineNotify.prototype.registerToken = function (token) {
+        var _this = this;
+        if (token instanceof Array) {
+            token
+                .filter(function (s) { return typeof s === "string" && !!s; })
+                .forEach(function (t) { return _this.tokenSet.add(t.trim()); });
+        }
+        else if (typeof token === "string" && token) {
+            this.tokenSet.add(token.trim());
+        }
+    };
+    LineNotify.prototype.unregisterToken = function (token) {
+        var _this = this;
+        if (token instanceof Array) {
+            token
+                .filter(function (s) { return typeof s === "string" && !!s; })
+                .forEach(function (t) { return _this.tokenSet.delete(t.trim()); });
+        }
+        else if (typeof token === "string" && token) {
+            this.tokenSet.delete(token.trim());
+        }
+    };
+    Object.defineProperty(LineNotify.prototype, "tokens", {
+        get: function () {
+            return Array.from(this.tokenSet.values());
+        },
+        enumerable: false,
+        configurable: true
+    });
     LineNotify.prototype.send = function (formData) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
-                if (!(this.tokens instanceof Array))
-                    return [2 /*return*/, false];
+                if (typeof formData === "string") {
+                    formData = { message: formData };
+                }
                 if (!formData)
                     return [2 /*return*/, false];
-                if (!formData.message || typeof formData.message !== "string")
+                if (!formData.message)
+                    return [2 /*return*/, false];
+                if (typeof formData.message !== "string")
                     return [2 /*return*/, false];
                 formData.message = this.overflowText(formData.message);
                 return [2 /*return*/, bluebird_1.map(this.tokens, function (token) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             if (typeof token !== "string")
                                 return [2 /*return*/];
-                            return [2 /*return*/, this.notify(token.trim(), formData)];
+                            return [2 /*return*/, this.notify(token, formData)];
                         });
                     }); }, { concurrency: 10 })
                         .then(function (res) { return true; })
@@ -88,15 +122,18 @@ var LineNotify = /** @class */ (function () {
                 return [2 /*return*/, request_promise_1.post(NOTIFY_URL, {
                         resolveWithFullResponse: true,
                         headers: {
-                            "Content-Type": "	application/x-www-form-urlencoded"
+                            "Content-Type": "	application/x-www-form-urlencoded",
                         },
                         auth: {
-                            bearer: bearer
+                            bearer: bearer,
                         },
-                        formData: formData
+                        formData: formData,
                     })
-                        .then(function (r) { return true; })
-                        .catch(function (err) { return false; })];
+                        .then(function (res) { return true; })
+                        .catch(function (error) {
+                        console.error("Error LineNotify.notify:", { bearer: bearer, formData: formData, error: error });
+                        return false;
+                    })];
             });
         });
     };

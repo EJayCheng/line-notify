@@ -9,10 +9,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -44,19 +45,23 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.LineNotifyService = exports.LINE_NOTIFY_TOKEN = void 0;
 var common_1 = require("@nestjs/common");
 var line_notify_1 = require("./line-notify");
 exports.LINE_NOTIFY_TOKEN = "LINE_NOTIFY_TOKEN";
 var LineNotifyService = /** @class */ (function () {
     function LineNotifyService(token) {
         if (token === void 0) { token = []; }
-        this.token = token;
         this.lineNotify = new line_notify_1.LineNotify();
-        this.lineNotify.tokens = token;
+        this.lineNotify.registerToken(token);
     }
-    LineNotifyService.prototype.setToken = function (tokens) {
+    LineNotifyService.prototype.registerToken = function (tokens) {
         if (tokens === void 0) { tokens = []; }
-        this.lineNotify.tokens = tokens;
+        this.lineNotify.registerToken(tokens);
+    };
+    LineNotifyService.prototype.unregisterToken = function (tokens) {
+        if (tokens === void 0) { tokens = []; }
+        this.lineNotify.unregisterToken(tokens);
     };
     LineNotifyService.prototype.send = function (data) {
         return __awaiter(this, void 0, void 0, function () {

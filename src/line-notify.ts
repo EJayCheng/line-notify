@@ -1,47 +1,19 @@
 import { map } from "bluebird";
 import { post } from "request-promise";
-
-export interface LineNotifyMessage {
-  /** 1000 characters max */
-  message: string;
-  /** Maximum size of 240×240px JPEG, HTTP/HTTPS URL */
-  imageThumbnail?: string;
-  /** Maximum size of 2048×2048px JPEG, HTTP/HTTPS URL */
-  imageFullsize?: string;
-  /** 	
-    Upload a image file to the LINE server.
-    Supported image format is png and jpeg.
-
-    If you specified imageThumbnail ,imageFullsize and imageFile, imageFile takes precedence.
-
-    There is a limit that you can upload to within one hour.
-    For more information, please see the section of the API Rate Limit.
-  */
-  imageFile?: File;
-  /** https://devdocs.line.me/files/sticker_list.pdf */
-  stickerPackageId?: number;
-  stickerId?: number;
-  /** 
-    true: The user doesn't receive a push notification when the message is sent.
-
-    false: The user receives a push notification when the message is sent (unless they have disabled push notification in LINE and/or their device).
-
-    If omitted, the value defaults to false. 
-  */
-  notificationDisabled?: boolean;
-}
+import { LineNotifyMessage } from "./line-notify.dto";
 
 const NOTIFY_URL = "https://notify-api.line.me/api/notify";
-
+const STATUS_URL = "https://notify-api.line.me/api/status";
 export class LineNotify {
-  public constructor(public tokens: string[] = []) {
-    if (typeof tokens === "string") this.tokens = [tokens];
+  private tokenSet = new Set<string>();
+  public constructor(tokens: string[] | string = []) {
+    this.registerToken(tokens);
   }
 
   private overflowText(
     text: string,
     max: number = 1000,
-    suffix: string = "..."
+    suffix: string = "……"
   ): string {
     if (text.length <= max) return text;
     if (max <= suffix.length) {
@@ -51,21 +23,48 @@ export class LineNotify {
     }
   }
 
-  public async send(formData: LineNotifyMessage): Promise<boolean> {
-    if (!(this.tokens instanceof Array)) return false;
+  public registerToken(token: string | string[]): void {
+    if (token instanceof Array) {
+      token
+        .filter((s) => typeof s === "string" && !!s)
+        .forEach((t) => this.tokenSet.add(t.trim()));
+    } else if (typeof token === "string" && token) {
+      this.tokenSet.add(token.trim());
+    }
+  }
+
+  public unregisterToken(token: string | string[]): void {
+    if (token instanceof Array) {
+      token
+        .filter((s) => typeof s === "string" && !!s)
+        .forEach((t) => this.tokenSet.delete(t.trim()));
+    } else if (typeof token === "string" && token) {
+      this.tokenSet.delete(token.trim());
+    }
+  }
+
+  private get tokens(): string[] {
+    return Array.from(this.tokenSet.values());
+  }
+
+  public async send(formData: LineNotifyMessage | string): Promise<boolean> {
+    if (typeof formData === "string") {
+      formData = { message: formData } as LineNotifyMessage;
+    }
     if (!formData) return false;
-    if (!formData.message || typeof formData.message !== "string") return false;
+    if (!formData.message) return false;
+    if (typeof formData.message !== "string") return false;
     formData.message = this.overflowText(formData.message);
     return map(
       this.tokens,
-      async token => {
+      async (token) => {
         if (typeof token !== "string") return;
-        return this.notify(token.trim(), formData);
+        return this.notify(token, formData as LineNotifyMessage);
       },
       { concurrency: 10 }
     )
-      .then(res => true)
-      .catch(err => false);
+      .then((res) => true)
+      .catch((err) => false);
   }
 
   private async notify(
@@ -76,14 +75,17 @@ export class LineNotify {
     return post(NOTIFY_URL, {
       resolveWithFullResponse: true,
       headers: {
-        "Content-Type": "	application/x-www-form-urlencoded"
+        "Content-Type": "	application/x-www-form-urlencoded",
       },
       auth: {
-        bearer
+        bearer,
       },
-      formData
+      formData,
     })
-      .then(r => true)
-      .catch(err => false);
+      .then((res) => true)
+      .catch((error) => {
+        console.error("Error LineNotify.notify:", { bearer, formData, error });
+        return false;
+      });
   }
 }
